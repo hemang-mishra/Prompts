@@ -2,6 +2,7 @@ package com.example.productivity.data
 
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
+import java.util.*
 
 @Dao
 interface PromptDao {
@@ -25,4 +26,18 @@ interface PromptDao {
 
     @Query("SELECT * FROM prompts WHERE (:categoryId IS NULL OR categoryId = :categoryId)")
     fun getPromptsByCategory(categoryId: Int?): Flow<List<PromptEntity>>
+
+    // Reminder-related queries
+    @Query("UPDATE prompts SET lastReviewTimestamp = :timestamp WHERE id = :id")
+    suspend fun updateLastReviewTimestamp(id: Int, timestamp: Long)
+
+    @Query("UPDATE prompts SET reviewFrequency = :days WHERE id = :id")
+    suspend fun updateReviewFrequency(id: Int, days: Int)
+
+    @Query("UPDATE prompts SET lastReviewTimestamp = :timestamp, frequency = frequency + 1 WHERE id = :id")
+    suspend fun reviewPrompt(id: Int, timestamp: Long)
+
+    @Query("SELECT * FROM prompts ORDER BY " +
+            "CASE WHEN lastReviewTimestamp IS NULL THEN 0 ELSE lastReviewTimestamp + (reviewFrequency * 86400000) END DESC")
+    fun getPromptsForReview(): Flow<List<PromptEntity>>
 }

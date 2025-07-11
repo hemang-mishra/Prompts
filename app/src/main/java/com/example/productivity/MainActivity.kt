@@ -54,6 +54,7 @@ import com.example.productivity.data.PromptEntity
 import com.example.productivity.ui.PromptListScreen
 import com.example.productivity.ui.PromptDetailScreen
 import com.example.productivity.ui.BackupScreen
+import com.example.productivity.ui.RemindersScreen
 import com.example.productivity.viewmodel.CategoryViewModel
 import com.example.productivity.ui.CategoryScreen
 import com.example.productivity.R
@@ -303,6 +304,9 @@ class MainActivity : FragmentActivity() {
                                         )
                                     }
                                 }
+                                composable("reminders") {
+                                    RemindersScreen(viewModel = promptViewModel)
+                                }
                                 composable("backup") {
                                     BackupScreen(viewModel = promptViewModel)
                                 }
@@ -322,6 +326,7 @@ class MainActivity : FragmentActivity() {
 fun BottomNavigationBar(navController: NavHostController) {
     val items = listOf(
         BottomNavItem("Prompts", "prompts", R.drawable.outline_filter_list_24),
+        BottomNavItem("Reminders", "reminders", R.drawable.baseline_access_time_filled_24),
         BottomNavItem("Backup", "backup", R.drawable.outline_settings_backup_restore_24),
         BottomNavItem("Categories", "categories", R.drawable.outline_category_24)
     )

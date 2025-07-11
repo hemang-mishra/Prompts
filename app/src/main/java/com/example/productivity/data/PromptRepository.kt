@@ -18,6 +18,9 @@ class PromptRepository(context: Context) {
 
     fun getPromptsByCategory(categoryId: Int?): Flow<List<PromptEntity>> = promptDao.getPromptsByCategory(categoryId)
 
+    // Reminder-related function to get prompts for review
+    fun getPromptsForReview(): Flow<List<PromptEntity>> = promptDao.getPromptsForReview()
+
     suspend fun addPrompt(prompt: PromptEntity) = withContext(Dispatchers.IO) {
         promptDao.insertPrompt(prompt)
     }
@@ -28,6 +31,20 @@ class PromptRepository(context: Context) {
 
     suspend fun incrementFrequency(id: Int) = withContext(Dispatchers.IO) {
         promptDao.incrementFrequency(id)
+    }
+
+    // Reminder-related methods
+    suspend fun updateLastReviewTimestamp(id: Int, timestamp: Long) = withContext(Dispatchers.IO) {
+        promptDao.updateLastReviewTimestamp(id, timestamp)
+    }
+
+    suspend fun updateReviewFrequency(id: Int, days: Int) = withContext(Dispatchers.IO) {
+        promptDao.updateReviewFrequency(id, days)
+    }
+
+    suspend fun reviewPrompt(id: Int) = withContext(Dispatchers.IO) {
+        val currentTime = System.currentTimeMillis()
+        promptDao.reviewPrompt(id, currentTime)
     }
 
     suspend fun exportPromptsAsJson(): String = withContext(Dispatchers.IO) {

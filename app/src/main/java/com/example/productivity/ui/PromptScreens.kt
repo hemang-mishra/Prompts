@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -18,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.productivity.R
 import com.example.productivity.data.PromptEntity
@@ -306,6 +308,7 @@ fun PromptDetailScreen(
     var text by remember { mutableStateOf(prompt.text) }
     var frequency by remember { mutableStateOf(prompt.frequency) }
     var categoryId by remember { mutableStateOf(prompt.categoryId) }
+    var reviewFrequency by remember { mutableStateOf(prompt.reviewFrequency) } // New state for review frequency
     val categories = viewModel.categories.collectAsState().value
 
     ModalBottomSheet(
@@ -423,6 +426,66 @@ fun PromptDetailScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Review Frequency Card - New addition
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        "Review Frequency (Days)",
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = FontWeight.SemiBold
+                        ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Frequency selector
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Pre-defined frequency options
+                        listOf(1, 3, 7, 14, 30).forEach { days ->
+                            FilterChip(
+                                selected = reviewFrequency == days,
+                                onClick = { reviewFrequency = days },
+                                label = { Text("$days") },
+                                modifier = Modifier.padding(horizontal = 4.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        // Custom frequency input
+                        OutlinedTextField(
+                            value = reviewFrequency.toString(),
+                            onValueChange = {
+                                val value = it.toIntOrNull() ?: 1
+                                reviewFrequency = if (value > 0) value else 1
+                            },
+                            modifier = Modifier.width(80.dp),
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number
+                            ),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             // Frequency and Category Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -528,7 +591,13 @@ fun PromptDetailScreen(
             ) {
                 Button(
                     onClick = {
-                        onSave(prompt.copy(title = title, text = text, frequency = frequency, categoryId = categoryId))
+                        onSave(prompt.copy(
+                            title = title,
+                            text = text,
+                            frequency = frequency,
+                            categoryId = categoryId,
+                            reviewFrequency = reviewFrequency
+                        ))
                     },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(12.dp)

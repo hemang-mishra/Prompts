@@ -25,6 +25,10 @@ class PromptViewModel(application: Application) : AndroidViewModel(application) 
         .flatMapLatest { repository.getPromptsByCategory(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    // Reminder-related flow for the reminders screen
+    val reminders: StateFlow<List<PromptEntity>> = repository.getPromptsForReview()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     fun setCategoryFilter(categoryId: Int?) {
         _selectedCategoryId.value = categoryId
     }
@@ -38,7 +42,32 @@ class PromptViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun incrementFrequency(id: Int) {
-        viewModelScope.launch { repository.incrementFrequency(id) }
+        viewModelScope.launch {
+            repository.incrementFrequency(id)
+            // Also update last review timestamp when used from prompt screen
+            repository.updateLastReviewTimestamp(id, System.currentTimeMillis())
+        }
+    }
+
+    // Reminder-related methods
+    fun updateLastReviewTimestamp(id: Int, timestamp: Long) {
+        viewModelScope.launch { repository.updateLastReviewTimestamp(id, timestamp) }
+    }
+
+    fun updateReviewFrequency(id: Int, days: Int) {
+        viewModelScope.launch { repository.updateReviewFrequency(id, days) }
+    }
+
+    fun reviewPrompt(id: Int) {
+        viewModelScope.launch { repository.reviewPrompt(id) }
+    }
+
+    fun calculateNextReviewDate(lastReviewTimestamp: Long?, reviewFrequency: Int): Long {
+        return if (lastReviewTimestamp == null) {
+            System.currentTimeMillis() // Today if never reviewed
+        } else {
+            lastReviewTimestamp + (reviewFrequency * 24 * 60 * 60 * 1000) // Add review frequency in milliseconds
+        }
     }
 
     suspend fun exportPromptsAsJson(): String {
