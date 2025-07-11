@@ -29,6 +29,11 @@ class PromptRepository(context: Context) {
         promptDao.updatePrompt(prompt)
     }
 
+    // New method to delete a prompt
+    suspend fun deletePrompt(id: Int) = withContext(Dispatchers.IO) {
+        promptDao.deletePrompt(id)
+    }
+
     suspend fun incrementFrequency(id: Int) = withContext(Dispatchers.IO) {
         promptDao.incrementFrequency(id)
     }

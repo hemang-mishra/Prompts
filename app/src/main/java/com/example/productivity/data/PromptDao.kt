@@ -15,6 +15,9 @@ interface PromptDao {
     @Update
     suspend fun updatePrompt(prompt: PromptEntity)
 
+    @Query("DELETE FROM prompts WHERE id = :id")
+    suspend fun deletePrompt(id: Int)
+
     @Query("UPDATE prompts SET frequency = frequency + 1 WHERE id = :id")
     suspend fun incrementFrequency(id: Int)
 
@@ -38,6 +41,6 @@ interface PromptDao {
     suspend fun reviewPrompt(id: Int, timestamp: Long)
 
     @Query("SELECT * FROM prompts ORDER BY " +
-            "CASE WHEN lastReviewTimestamp IS NULL THEN 0 ELSE lastReviewTimestamp + (reviewFrequency * 86400000) END DESC")
+            "CASE WHEN lastReviewTimestamp IS NULL THEN 0 ELSE lastReviewTimestamp + (reviewFrequency * 86400000) END")
     fun getPromptsForReview(): Flow<List<PromptEntity>>
 }

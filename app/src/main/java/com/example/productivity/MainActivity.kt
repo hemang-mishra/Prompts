@@ -45,10 +45,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.productivity.viewmodel.PromptViewModel
 import com.example.productivity.data.PromptEntity
 import com.example.productivity.ui.PromptListScreen
@@ -94,6 +96,10 @@ fun BiometricAuthScreen(
                     authError = "Authentication failed. Try again."
                 }
             })
+    }
+
+    LaunchedEffect(Unit) {
+        biometricPrompt.authenticate(promptInfo)
     }
 
     Box(
@@ -246,8 +252,15 @@ class MainActivity : FragmentActivity() {
                 }
             )
             var isAuthenticated by remember { mutableStateOf(false) }
-            var showPromptDetail by remember { mutableStateOf<PromptEntity?>(null) }
             val navController = rememberNavController()
+
+            // Track current route to determine when to show bottom bar
+            val navBackStackEntry by navController.currentBackStackEntryAsState()
+            val currentRoute = navBackStackEntry?.destination?.route
+
+            // Check if current route is in bottom nav routes
+            val bottomNavRoutes = listOf("prompts", "reminders", "backup", "categories")
+            val showBottomBar = currentRoute in bottomNavRoutes
 
             ProductivityTheme {
                 Surface(
@@ -258,7 +271,7 @@ class MainActivity : FragmentActivity() {
                         modifier = Modifier.fillMaxSize(),
                         containerColor = MaterialTheme.colorScheme.background,
                         bottomBar = {
-                            if (isAuthenticated) {
+                            if (isAuthenticated && showBottomBar) {
                                 BottomNavigationBar(navController = navController)
                             }
                         }
@@ -277,35 +290,36 @@ class MainActivity : FragmentActivity() {
                                 composable("prompts") {
                                     PromptListScreen(
                                         viewModel = promptViewModel,
-                                        onPromptClick = { prompt -> showPromptDetail = prompt },
-                                        onAddPrompt = {
-                                            promptViewModel.addPrompt(
-                                                PromptEntity(
-                                                    title = "New Prompt",
-                                                    text = "",
-                                                    frequency = 0
-                                                )
-                                            )
+                                        onPromptClick = { prompt ->
+                                            navController.navigate("prompt_detail/${prompt.id}")
                                         },
-                                        onPromptSend = { prompt ->
-                                            promptViewModel.incrementFrequency(prompt.id)
-                                            navigateToGPT(this@MainActivity, prompt.text)
+                                        onAddPrompt = {
+                                            navController.navigate("prompt_detail/0")
                                         }
                                     )
-                                    if (showPromptDetail != null) {
-                                        PromptDetailScreen(
-                                            prompt = showPromptDetail!!,
-                                            onSave = { updatedPrompt ->
-                                                promptViewModel.updatePrompt(updatedPrompt)
-                                                showPromptDetail = null
-                                            },
-                                            onClose = { showPromptDetail = null },
-                                            viewModel = promptViewModel
-                                        )
-                                    }
                                 }
+
+                                composable(
+                                    route = "prompt_detail/{promptId}",
+                                    arguments = listOf(
+                                        navArgument("promptId") {
+                                            type = NavType.IntType
+                                        }
+                                    )
+                                ) { backStackEntry ->
+                                    val promptId = backStackEntry.arguments?.getInt("promptId") ?: 0
+                                    PromptDetailScreen(
+                                        promptId = promptId,
+                                        viewModel = promptViewModel,
+                                        navController = navController
+                                    )
+                                }
+
                                 composable("reminders") {
-                                    RemindersScreen(viewModel = promptViewModel)
+                                    RemindersScreen(
+                                        viewModel = promptViewModel,
+                                        navController = navController
+                                    )
                                 }
                                 composable("backup") {
                                     BackupScreen(viewModel = promptViewModel)
@@ -325,7 +339,7 @@ class MainActivity : FragmentActivity() {
 @Composable
 fun BottomNavigationBar(navController: NavHostController) {
     val items = listOf(
-        BottomNavItem("Prompts", "prompts", R.drawable.outline_filter_list_24),
+        BottomNavItem("Prompts", "prompts", R.drawable.outline_lab_profile_24),
         BottomNavItem("Reminders", "reminders", R.drawable.baseline_access_time_filled_24),
         BottomNavItem("Backup", "backup", R.drawable.outline_settings_backup_restore_24),
         BottomNavItem("Categories", "categories", R.drawable.outline_category_24)
@@ -385,10 +399,13 @@ data class BottomNavItem(
     val iconRes: Int
 )
 
-fun navigateToGPT(context: Context, prompt: String) {
+fun navigateToGPT(context: Context, prompt: String, newTask: Boolean = false) {
     val intent = Intent(Intent.ACTION_SEND).apply {
         putExtra(Intent.EXTRA_TEXT, prompt)
         type = "text/plain"
+        if (newTask) {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
     }
     context.startActivity(intent)
 }

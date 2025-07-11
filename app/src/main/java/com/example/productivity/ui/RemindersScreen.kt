@@ -1,6 +1,7 @@
 package com.example.productivity.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,6 +16,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 import com.example.productivity.R
 import com.example.productivity.data.PromptEntity
 import com.example.productivity.viewmodel.PromptViewModel
@@ -23,7 +25,10 @@ import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RemindersScreen(viewModel: PromptViewModel) {
+fun RemindersScreen(
+    viewModel: PromptViewModel,
+    navController: NavHostController? = null
+) {
     val reminders by viewModel.reminders.collectAsState()
     val scrollState = rememberScrollState()
     val dateFormat = SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
@@ -113,7 +118,12 @@ fun RemindersScreen(viewModel: PromptViewModel) {
                     val isDue = isReviewDue(prompt, viewModel)
 
                     Card(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                // Navigate to PromptDetailScreen when card is clicked
+                                navController?.navigate("prompt_detail/${prompt.id}")
+                            },
                         colors = CardDefaults.cardColors(
                             containerColor = if (isDue)
                                 MaterialTheme.colorScheme.secondaryContainer
@@ -193,13 +203,22 @@ fun RemindersScreen(viewModel: PromptViewModel) {
 
                                 // Reflect button
                                 Button(
-                                    onClick = { viewModel.reviewPrompt(prompt.id) },
+                                    // Don't propagate click to the card
+                                    onClick = {
+                                        viewModel.reviewPrompt(prompt.id)
+                                    },
                                     shape = RoundedCornerShape(8.dp),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = if (isDue)
                                             MaterialTheme.colorScheme.primary
                                         else
                                             MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                                    ),
+                                    // Prevent the card's click handler from being triggered
+                                    modifier = Modifier.clickable(
+                                        interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                                        indication = null,
+                                        onClick = {}
                                     )
                                 ) {
                                     Icon(
@@ -251,8 +270,8 @@ fun RemindersScreen(viewModel: PromptViewModel) {
                 }
             }
 
-            // Bottom spacing
-            Spacer(modifier = Modifier.height(80.dp))
+            // Bottom spacing to ensure content is fully scrollable
+            Spacer(modifier = Modifier.height(72.dp))
         }
     }
 }

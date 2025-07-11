@@ -41,6 +41,14 @@ class PromptViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch { repository.updatePrompt(prompt) }
     }
 
+    // New method to delete a prompt
+    fun deletePrompt(id: Int, onDeleted: () -> Unit = {}) {
+        viewModelScope.launch {
+            repository.deletePrompt(id)
+            onDeleted()
+        }
+    }
+
     fun incrementFrequency(id: Int) {
         viewModelScope.launch {
             repository.incrementFrequency(id)
